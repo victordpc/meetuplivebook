@@ -1,0 +1,83 @@
+# Livebook para monitorizar aplicaciones en producción
+
+```elixir
+Mix.install([
+  {:kino_db, "~> 0.2.3"},
+  {:kino_vega_lite, "~> 0.1.10"},
+  {:kino_maplibre, "~> 0.1.10"},
+  {:kino_explorer, "~> 0.1.10"},
+  {:httpoison, "~> 2.2"}
+])
+```
+
+## Monitorizar aplicaciones en producción
+
+Donde tengamos desplegado el livebook podemos ver los procesos de la máquina, en este caso estamos con un livebook deesplegado en hugginfaces y podemos ver los procesos que tiene el servidor
+
+```elixir
+for pid <- Process.list() do
+  Process.info(pid)
+end
+```
+
+Los procesos nos los proporciona la maquina virtual de erlang
+
+```elixir
+processes = Process.list()
+[head | _] = processes
+info = Process.info(head, [:memory, :status, :registered_name])
+```
+
+Podemos crear un proceso y administrarlo
+
+```elixir
+defmodule MyThread do
+  def start_link do
+    Task.start_link(&loop/0)
+  end
+
+  defp loop do
+    Process.flag(:trap_exit, true)
+
+    receive do
+      {:EXIT, _pid, :normal} ->
+        IO.puts("Hilo terminado normalmente")
+
+      other ->
+        IO.puts("Hilo terminado con mensaje inesperado: #{inspect(other)}")
+    end
+  end
+end
+
+# Iniciar el hilo
+{:ok, t_pid} = MyThread.start_link()
+Process.register(t_pid, :receiver)
+data = [{:pid, t_pid} | Process.info(t_pid, [:memory, :status, :registered_name])]
+
+{:ok, t_pid2} = MyThread.start_link()
+data2 = [{:pid, t_pid2} | Process.info(t_pid2, [:memory, :status, :registered_name])]
+
+[data | [data2]]
+```
+
+```elixir
+Process.exit(t_pid, :normal)
+```
+
+```elixir
+# Process.exit(t_pid2, :kill)
+```
+
+```elixir
+{:ok, %{body: img}} = HTTPoison.get("http://localhost:4000/identicon?word=hola")
+img
+```
+
+```elixir
+img = :rpc.call(:app@RNTDELL000826, LiveIdenticon.Identicon.Generator, :generate, ["hola"])
+Kino.Image.new(img, "image/png")
+```
+
+```elixir
+
+```

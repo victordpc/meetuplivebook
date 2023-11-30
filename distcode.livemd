@@ -1,0 +1,20 @@
+# Some distributed livebook
+
+```elixir
+IO.puts(node())
+IO.puts(Node.get_cookie())
+```
+
+## Section
+
+```elixir
+defmodule SomeCoolCode do
+  def status do
+    {:status, "active"}
+  end
+
+  def mem_usage do
+    Process.info(self(), [:memory, :status, :registered_name])
+  end
+end
+```

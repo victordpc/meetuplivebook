@@ -1,0 +1,95 @@
+# Atach livebook
+
+```elixir
+alias VegaLite, as: Vl
+alias LiveIdenticon.Identicon.DataGenerator
+alias LiveIdenticon.Identicon.Generator
+```
+
+## Section
+
+```elixir
+Generator.generate("hola")
+```
+
+```elixir
+weather = DataGenerator.data()
+```
+
+```elixir
+products = DataGenerator.more_data()
+```
+
+```elixir
+data =
+  weather
+  |> Enum.group_by(& &1.condiciones)
+  |> Enum.map(fn {condicion, datos} ->
+    temperatura_media =
+      datos |> Enum.map(& &1.temperatura) |> Enum.reduce(&+/2) |> div(length(datos))
+
+    # %{condicion: condicion, temperatura_media: temperatura_media}
+    %{"condicion" => condicion, "value" => temperatura_media}
+  end)
+
+Vl.new()
+|> Vl.data_from_values(data)
+|> Vl.mark(:arc)
+|> Vl.encode_field(:theta, "value", type: :quantitative)
+|> Vl.encode_field(:color, "condicion", type: :nominal)
+|> Vl.config(view: [stroke: nil])
+```
+
+```elixir
+weather
+|> Enum.group_by(& &1.condiciones)
+|> Enum.reduce([], fn {condicion, datos}, acc ->
+  temperatura_media =
+    datos
+    |> Enum.map(& &1.temperatura)
+    |> Enum.reduce(&+/2)
+    |> div(length(datos))
+
+  %{"condicion" => condicion, "value" => temperatura_media}
+  # Keyword.put(acc, String.to_atom(condicion), temperatura_media)
+end)
+
+#   Vl.new()
+# |> Vl.data_from_values(weather)
+# |> Vl.mark(:arc)
+# # |> Vl.encode_field(:theta, "value", type: :quantitative)
+# |> Vl.encode_field(:color, "personality", type: :nominal)
+# |> Vl.config(view: [stroke: nil])
+```
+
+```elixir
+# data= Enum.map(weather, fn -> )
+
+Vl.new()
+|> Vl.data_from_values(weather)
+|> Vl.mark(:arc)
+
+# |> Vl.encode_field(:theta, "value", type: :quantitative)
+# |> Vl.encode_field(:color, "personality", type: :nominal)
+# |> Vl.config(view: [stroke: nil])
+```
+
+```elixir
+personality_counts = %{any: 77, extrovert: 10, introvert: 13}
+```
+
+```elixir
+data =
+  Enum.map(personality_counts, fn {type, count} ->
+    %{"personality" => Atom.to_string(type), "value" => count}
+  end)
+```
+
+```elixir
+Vl.new()
+|> Vl.data_from_values(data)
+|> Vl.mark(:arc)
+|> Vl.encode_field(:theta, "value", type: :quantitative)
+|> Vl.encode_field(:color, "personality", type: :nominal)
+|> Vl.config(view: [stroke: nil])
+```
