@@ -2,11 +2,56 @@
 
 ```elixir
 alias VegaLite, as: Vl
+
+defmodule TuModulo do
+  def calcular_promedio(products) do
+    products
+    |> Enum.group_by(& &1.categoria)
+    |> Enum.reduce([], fn {categoria, productos}, acc ->
+      precio_promedio = calcular_precio_promedio(productos)
+
+      [%{"categoria" => categoria, "value" => precio_promedio} | acc]
+    end)
+  end
+
+  defp calcular_precio_promedio(products) do
+    total_precio =
+      Enum.reduce(products, 0, fn producto, acc ->
+        acc + producto.precio
+      end)
+
+    total_stock = length(products)
+
+    promedio =
+      if total_stock != 0 do
+        total_precio / total_stock
+      else
+        0
+      end
+
+    promedio
+  end
+end
+```
+
+## Configuración
+
+Tenemos que configurar el nombre de nodo y la cookie necesarias para la conexión en la pestaña RUNTIME > Configure, añadimos el nombre de nodo y la cookie en las cajas de texto correspondiente.
+
+Tenemos que arrancar la aplicación a la que nos queremos asociar configurando las variables sname y cookie.
+
+**iex --sname app --cookie mycookie -S mix phx.server**
+
+**Tenemos que tener visibilidad sobre el cluster al que queremos conectarnos, esto puede incluir el uso de configuracion de red para poder conseguirlo.**
+
+## Ejecución
+
+Con esta configuración cargamos los modulos de nuestro nodo remoto en local por lo tanto podemos utilizar el código que tenemos en nuestra aplicación desplegada.
+
+```elixir
 alias LiveIdenticon.Identicon.DataGenerator
 alias LiveIdenticon.Identicon.Generator
 ```
-
-## Section
 
 ```elixir
 Generator.generate("hola")
@@ -28,7 +73,6 @@ data =
     temperatura_media =
       datos |> Enum.map(& &1.temperatura) |> Enum.reduce(&+/2) |> div(length(datos))
 
-    # %{condicion: condicion, temperatura_media: temperatura_media}
     %{"condicion" => condicion, "value" => temperatura_media}
   end)
 
@@ -41,55 +85,30 @@ Vl.new()
 ```
 
 ```elixir
-weather
-|> Enum.group_by(& &1.condiciones)
-|> Enum.reduce([], fn {condicion, datos}, acc ->
-  temperatura_media =
-    datos
-    |> Enum.map(& &1.temperatura)
-    |> Enum.reduce(&+/2)
-    |> div(length(datos))
+resultados = TuModulo.calcular_promedio(products)
 
-  %{"condicion" => condicion, "value" => temperatura_media}
-  # Keyword.put(acc, String.to_atom(condicion), temperatura_media)
-end)
-
-#   Vl.new()
-# |> Vl.data_from_values(weather)
-# |> Vl.mark(:arc)
-# # |> Vl.encode_field(:theta, "value", type: :quantitative)
-# |> Vl.encode_field(:color, "personality", type: :nominal)
-# |> Vl.config(view: [stroke: nil])
+Vl.new(width: 300, height: 300)
+|> Vl.data_from_values(resultados)
+|> Vl.mark(:bar)
+|> Vl.encode_field(:x, "categoria",
+  type: :nominal,
+  axis: [label_angle: 0],
+  sort: [field: "value", order: "descending"]
+)
+|> Vl.encode_field(:y, "value", type: :quantitative)
 ```
 
-```elixir
-# data= Enum.map(weather, fn -> )
+## Utilidades
 
-Vl.new()
-|> Vl.data_from_values(weather)
-|> Vl.mark(:arc)
+* Acceder a cualquier funcion de la aplicación
+* Gestión BBDD
+* * Postgresql
+* * Redis
+* * ETL visuales
+* Gestión memoria
+* Gestión de procesos
+* Debugguear
+* Paneles de control de aplicaciones
+* Cuadros de mando
 
-# |> Vl.encode_field(:theta, "value", type: :quantitative)
-# |> Vl.encode_field(:color, "personality", type: :nominal)
-# |> Vl.config(view: [stroke: nil])
-```
-
-```elixir
-personality_counts = %{any: 77, extrovert: 10, introvert: 13}
-```
-
-```elixir
-data =
-  Enum.map(personality_counts, fn {type, count} ->
-    %{"personality" => Atom.to_string(type), "value" => count}
-  end)
-```
-
-```elixir
-Vl.new()
-|> Vl.data_from_values(data)
-|> Vl.mark(:arc)
-|> Vl.encode_field(:theta, "value", type: :quantitative)
-|> Vl.encode_field(:color, "personality", type: :nominal)
-|> Vl.config(view: [stroke: nil])
-```
+En un entorno visual y amigable
